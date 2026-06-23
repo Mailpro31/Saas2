@@ -20,9 +20,15 @@
 
 ## Décisions d'adaptation (post-Phase 1)
 
-_(À compléter après le choix du produit en Phase 1 si une adaptation est nécessaire.)_
+Produit retenu : **« Preuvio »** — collecte & affichage de témoignages clients FR-native (cf. `RESEARCH.md`).
 
-- **Statut** : stack par défaut conservée. Voir `RESEARCH.md` pour le produit retenu et `PLAN.md` pour l'architecture détaillée.
+| Élément | Défaut brief | Choix retenu | Justification |
+|---|---|---|---|
+| Framework | Next.js 15 | **Next.js 16** | `create-next-app@latest` installe la dernière majeure stable (juin 2026). App Router identique, breaking changes mineurs (params async déjà présents en 15), 100 % compatible Vercel. |
+| Stockage fichiers | — | **Supabase Storage** | Avatars + vidéos de témoignages. Pas de pipeline de transcodage dans le MVP (lecture native HTML5, taille plafonnée) pour rester déployable sans coût d'infra vidéo. |
+| Email | Resend (si pertinent) | **Resend** | Pertinent : notification au créateur à chaque nouveau témoignage + email de demande de témoignage. Dégradation gracieuse si la clé est absente (no-op loggé). |
+
+Reste de la stack par défaut conservé (Tailwind v4 + shadcn/ui manuel, Supabase Auth + Postgres + RLS, Stripe test, Vercel, Vitest, Zod).
 
 ## Principes transverses
 
