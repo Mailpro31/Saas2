@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
-import { getPublicWidget, getApprovedTestimonials } from "@/lib/queries";
+import {
+  publicGetWidgetById,
+  publicGetApprovedTestimonials,
+} from "@/lib/queries";
 import { WallOfLove } from "@/components/wall-of-love";
 import { EmbedResizer } from "@/components/embed/embed-resizer";
 import type { TestimonialDisplay } from "@/components/testimonial-card";
 import { cn } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export default async function EmbedPage({
   params,
@@ -11,10 +16,10 @@ export default async function EmbedPage({
   params: Promise<{ widgetId: string }>;
 }) {
   const { widgetId } = await params;
-  const widget = await getPublicWidget(widgetId);
+  const widget = await publicGetWidgetById(widgetId);
   if (!widget) notFound();
 
-  const approved = await getApprovedTestimonials(widget.space_id);
+  const approved = await publicGetApprovedTestimonials(widget.space_id);
   const testimonials: TestimonialDisplay[] = approved.map((t) => ({
     author_name: t.author_name,
     author_role: t.author_role,

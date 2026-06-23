@@ -19,9 +19,13 @@ export function EmbedResizer({ id }: { id: string }) {
     post();
     const ro = new ResizeObserver(post);
     ro.observe(el);
+    // Catch late-loading media (avatars/videos) that change the height after
+    // first paint, in case ResizeObserver debounces the change.
+    const timers = [100, 400, 1200].map((ms) => setTimeout(post, ms));
     window.addEventListener("load", post);
     return () => {
       ro.disconnect();
+      timers.forEach(clearTimeout);
       window.removeEventListener("load", post);
     };
   }, [id]);

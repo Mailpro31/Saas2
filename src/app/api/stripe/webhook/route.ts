@@ -27,16 +27,27 @@ async function syncSubscription(sub: Stripe.Subscription) {
   const admin = createAdminClient();
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  const userId = sub.metadata?.supabase_user_id;
 
-  await admin
+  const update = {
+    plan: planFromStatus(sub.status),
+    stripe_customer_id: customerId,
+    stripe_subscription_id: sub.id,
+    subscription_status: sub.status,
+    current_period_end: getPeriodEnd(sub),
+  };
+
+  // Match by customer id; fall back to the user id from subscription metadata
+  // (covers the race where the customer id wasn't yet persisted on the profile).
+  const { data } = await admin
     .from("profiles")
-    .update({
-      plan: planFromStatus(sub.status),
-      stripe_subscription_id: sub.id,
-      subscription_status: sub.status,
-      current_period_end: getPeriodEnd(sub),
-    })
-    .eq("stripe_customer_id", customerId);
+    .update(update)
+    .eq("stripe_customer_id", customerId)
+    .select("id");
+
+  if ((!data || data.length === 0) && userId) {
+    await admin.from("profiles").update(update).eq("id", userId);
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -47,6 +47,11 @@ export function CollectionForm({ space }: { space: Space }) {
         avatarUrl = url;
       }
 
+      if (space.collect_video && mode === "video" && !videoFile) {
+        setError("Veuillez sélectionner une vidéo, ou basculez en mode écrit.");
+        return;
+      }
+
       let videoUrl: string | undefined;
       const isVideo = space.collect_video && mode === "video" && !!videoFile;
       if (isVideo && videoFile) {
@@ -99,7 +104,10 @@ export function CollectionForm({ space }: { space: Space }) {
             <button
               key={m}
               type="button"
-              onClick={() => setMode(m)}
+              onClick={() => {
+                setMode(m);
+                if (m === "text") setVideoFile(null);
+              }}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition-colors",
                 mode === m ? "border-primary bg-primary/5" : "hover:bg-muted",

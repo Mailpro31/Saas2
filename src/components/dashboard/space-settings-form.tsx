@@ -39,7 +39,7 @@ export function SpaceSettingsForm({
     thank_you_message: space.thank_you_message,
     collect_rating: space.collect_rating,
     collect_avatar: space.collect_avatar,
-    collect_video: space.collect_video,
+    collect_video: space.collect_video && videoAllowed,
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {

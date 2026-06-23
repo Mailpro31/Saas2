@@ -50,11 +50,11 @@ export function WidgetEditor({
 
   const [config, setConfig] = useState<WallConfig>({
     layout: widget?.layout ?? "wall",
-    theme: widget?.theme ?? "light",
+    theme: customThemeAllowed ? (widget?.theme ?? "light") : "light",
     columns: widget?.columns ?? 3,
     show_rating: widget?.show_rating ?? true,
     show_avatar: widget?.show_avatar ?? true,
-    show_branding: widget?.show_branding ?? true,
+    show_branding: removeBrandingAllowed ? (widget?.show_branding ?? true) : true,
   });
 
   function set<K extends keyof WallConfig>(key: K, value: WallConfig[K]) {

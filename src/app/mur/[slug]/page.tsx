@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import {
-  getPublicSpaceBySlug,
-  getSpaceWidget,
-  getApprovedTestimonials,
+  publicGetSpaceBySlug,
+  publicGetSpaceWidget,
+  publicGetApprovedTestimonials,
 } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 import { WallOfLove } from "@/components/wall-of-love";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const space = await getPublicSpaceBySlug(slug);
+  const space = await publicGetSpaceBySlug(slug);
   if (!space) return { title: "Mur introuvable" };
   return {
     title: `Ce que disent les clients de ${space.name}`,
@@ -32,12 +34,12 @@ export default async function WallPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const space = await getPublicSpaceBySlug(slug);
+  const space = await publicGetSpaceBySlug(slug);
   if (!space) notFound();
 
   const [widget, approved] = await Promise.all([
-    getSpaceWidget(space.id),
-    getApprovedTestimonials(space.id),
+    publicGetSpaceWidget(space.id),
+    publicGetApprovedTestimonials(space.id),
   ]);
 
   const testimonials: TestimonialDisplay[] = approved.map((t) => ({

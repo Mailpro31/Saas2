@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
+import { rateLimit, clientIpFrom } from "@/lib/rate-limit";
 import { planLimits, type Plan } from "@/lib/plans";
 import { sendNewTestimonialEmail } from "@/lib/email/resend";
 import {
@@ -32,6 +34,12 @@ export async function submitTestimonial(
 
   // Honeypot: a filled `website` field means a bot. Pretend success.
   if (data.website && data.website.length > 0) return ok(undefined);
+
+  // Best-effort rate limit to curb scripted flooding of a space's quota.
+  const ip = clientIpFrom(await headers());
+  if (!rateLimit(`submit:${ip}`, 8, 60_000).ok) {
+    return fail("Trop de soumissions. Réessayez dans une minute.");
+  }
 
   const admin = createAdminClient();
 
@@ -122,7 +130,16 @@ export async function addManualTestimonial(
 
   const supabase = await createClient();
 
-  // Ownership + cap check.
+  // Verify ownership explicitly (defense in depth on top of RLS).
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("id")
+    .eq("id", data.spaceId)
+    .eq("owner_id", session.user.id)
+    .single();
+  if (!space) return fail("Espace introuvable.");
+
+  // Cap check.
   const { count } = await supabase
     .from("testimonials")
     .select("*", { count: "exact", head: true })

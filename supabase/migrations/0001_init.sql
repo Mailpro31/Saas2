@@ -127,10 +127,12 @@ drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
   for update using (id = (select auth.uid())) with check (id = (select auth.uid()));
 
--- spaces : public read (public storefronts) ; owner writes
+-- spaces : owner-only read (public pages read via the service-role client
+-- server-side, so anon never has direct table access). Owner writes.
 drop policy if exists spaces_select_public on public.spaces;
-create policy spaces_select_public on public.spaces
-  for select using (true);
+drop policy if exists spaces_select_own on public.spaces;
+create policy spaces_select_own on public.spaces
+  for select using (owner_id = (select auth.uid()));
 
 drop policy if exists spaces_insert_own on public.spaces;
 create policy spaces_insert_own on public.spaces
@@ -144,10 +146,10 @@ drop policy if exists spaces_delete_own on public.spaces;
 create policy spaces_delete_own on public.spaces
   for delete using (owner_id = (select auth.uid()));
 
--- testimonials : approved ones are public ; owner sees & manages all of their spaces'
+-- testimonials : owner-only read. Public pages render approved testimonials
+-- via the service-role client server-side, so anon has NO direct access (this
+-- prevents cross-tenant enumeration of testimonials, incl. author emails).
 drop policy if exists testimonials_select_approved on public.testimonials;
-create policy testimonials_select_approved on public.testimonials
-  for select using (status = 'approved');
 
 drop policy if exists testimonials_select_owner on public.testimonials;
 create policy testimonials_select_owner on public.testimonials
@@ -190,10 +192,16 @@ create policy testimonials_delete_owner on public.testimonials
     )
   );
 
--- widgets : public read ; owner writes
+-- widgets : owner-only read (public pages read via the service-role client).
 drop policy if exists widgets_select_public on public.widgets;
-create policy widgets_select_public on public.widgets
-  for select using (true);
+drop policy if exists widgets_select_own on public.widgets;
+create policy widgets_select_own on public.widgets
+  for select using (
+    exists (
+      select 1 from public.spaces s
+      where s.id = widgets.space_id and s.owner_id = (select auth.uid())
+    )
+  );
 
 drop policy if exists widgets_insert_owner on public.widgets;
 create policy widgets_insert_owner on public.widgets

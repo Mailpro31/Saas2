@@ -23,22 +23,26 @@ export async function createCheckoutSession(
       ? env.STRIPE_PRICE_PRO_YEARLY
       : env.STRIPE_PRICE_PRO_MONTHLY;
 
-  // Reuse or create the Stripe customer for this profile.
-  let customerId = session.profile.stripe_customer_id;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: session.user.email ?? undefined,
-      metadata: { supabase_user_id: session.user.id },
-    });
-    customerId = customer.id;
-    const supabase = await createClient();
-    await supabase
-      .from("profiles")
-      .update({ stripe_customer_id: customerId })
-      .eq("id", session.user.id);
-  }
-
   try {
+    // Reuse or create the Stripe customer for this profile.
+    let customerId = session.profile.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: session.user.email ?? undefined,
+        metadata: { supabase_user_id: session.user.id },
+      });
+      customerId = customer.id;
+      const supabase = await createClient();
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", session.user.id);
+      if (updateError) {
+        console.error("[stripe] failed to persist customer id:", updateError);
+        // Non-fatal: the webhook also persists the customer id via metadata.
+      }
+    }
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,

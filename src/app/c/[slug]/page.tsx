@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPublicSpaceBySlug } from "@/lib/queries";
+import { publicGetSpaceBySlug } from "@/lib/queries";
 import { CollectionForm } from "@/components/collection/collection-form";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -11,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const space = await getPublicSpaceBySlug(slug);
+  const space = await publicGetSpaceBySlug(slug);
   if (!space) return { title: "Espace introuvable" };
   return {
     title: `${space.headline} — ${space.name}`,
@@ -26,7 +28,7 @@ export default async function CollectionPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const space = await getPublicSpaceBySlug(slug);
+  const space = await publicGetSpaceBySlug(slug);
   if (!space) notFound();
 
   return (

@@ -38,7 +38,7 @@ export function WallOfLove({
 
   const cards = testimonials.map((t, i) => (
     <TestimonialCard
-      key={i}
+      key={`${i}-${t.author_name}-${t.content.slice(0, 24)}`}
       testimonial={t}
       showRating={show_rating}
       showAvatar={show_avatar}

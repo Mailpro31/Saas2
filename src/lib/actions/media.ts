@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit, clientIpFrom } from "@/lib/rate-limit";
 import { ok, fail, type ActionResult } from "./result";
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -26,6 +28,11 @@ const EXT: Record<string, string> = {
 export async function uploadMedia(
   formData: FormData,
 ): Promise<ActionResult<{ url: string }>> {
+  const ip = clientIpFrom(await headers());
+  if (!rateLimit(`upload:${ip}`, 15, 60_000).ok) {
+    return fail("Trop d'envois de fichiers. Réessayez dans un instant.");
+  }
+
   const file = formData.get("file");
   const kindRaw = formData.get("kind");
   const kind = kindRaw === "video" ? "video" : "image";

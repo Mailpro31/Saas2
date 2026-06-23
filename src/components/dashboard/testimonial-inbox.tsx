@@ -59,7 +59,7 @@ export function TestimonialInbox({
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const counts = useMemo(() => {
     const c = { all: testimonials.length, pending: 0, approved: 0, archived: 0 };
@@ -204,7 +204,7 @@ export function TestimonialInbox({
                       <Button
                         size="sm"
                         variant="default"
-                        disabled={busy}
+                        disabled={busy || isPending}
                         onClick={() =>
                           run(
                             t.id,
@@ -223,7 +223,7 @@ export function TestimonialInbox({
                       <Button
                         size="sm"
                         variant={t.featured ? "secondary" : "outline"}
-                        disabled={busy}
+                        disabled={busy || isPending}
                         onClick={() =>
                           run(
                             t.id,
@@ -246,7 +246,7 @@ export function TestimonialInbox({
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={busy}
+                        disabled={busy || isPending}
                         onClick={() =>
                           run(
                             t.id,
@@ -265,7 +265,7 @@ export function TestimonialInbox({
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={busy}
+                        disabled={busy || isPending}
                         onClick={() =>
                           run(
                             t.id,
@@ -286,7 +286,7 @@ export function TestimonialInbox({
                       size="sm"
                       variant="ghost"
                       className="text-destructive hover:text-destructive"
-                      disabled={busy}
+                      disabled={busy || isPending}
                       onClick={() => {
                         if (
                           window.confirm(
