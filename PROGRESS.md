@@ -52,6 +52,39 @@ _Méthode_ : fan-out de **4 agents de recherche en parallèle** (clusters : preu
 
 ---
 
-## Phase 3 — Développement ⏳ (en cours)
+## Phase 3 — Développement ✅ (2026-06-23)
 
-_(Section mise à jour au fil de l'eau.)_
+- **Socle** : Next.js 16 + Tailwind v4 + shadcn/ui (19 primitives écrites à la main — registre réseau bloqué), clients Supabase (browser/server/admin/proxy) typés, client Stripe lazy, env validé (Zod), `plans.ts`, rate-limiter.
+- **Base** : migration SQL unique (`0001_init.sql`) — tables, **RLS**, trigger d'inscription, `stripe_events`, bucket Storage.
+- **Parcours critique** codé de bout en bout : auth (email/mot de passe) → espaces → page de collecte publique → boîte de réception → widget/embed → mur public → facturation Stripe (Checkout + webhook + portal).
+- **Enrichissements** : vidéo (Pro), ajout manuel (Pro), perso widget, recherche/filtres, notif email (Resend, dégradation gracieuse), QR de partage.
+- **Qualité** : TS strict, validation Zod serveur, états loading/error/empty, responsive + a11y, commits atomiques.
+- **Revue** : `/code-review` (max) + `/security-review` exécutés. Tous les problèmes **critiques et majeurs corrigés** — détail dans `TEST_REPORT.md`. Notamment : **escalade de plan (profiles RLS)**, fuite cross-tenant, open-redirect, idempotence webhook, durcissement upload, rate-limiting, headers de sécurité.
+
+## Phase 4 — Tests & QA ✅ (2026-06-23)
+
+- **38 tests Vitest** sur la logique métier (slug, plans, validations) — verts.
+- **Escouade de 10 angles d'agents** (4 code-review, 2 security, 4 QA : happy-path/user-stories, cas limites/erreurs, UX/a11y/copie, responsive/perf/Stripe).
+- Consolidation dans `TEST_REPORT.md` par sévérité avec disposition (corriger/améliorer/modifier/supprimer) + statut.
+- **Aucun blocage fonctionnel** ; tous les correctifs critiques/majeurs/mineurs impactants appliqués et re-vérifiés (build + typecheck + lint + tests verts).
+
+## Phase 5 — Polish & pré-déploiement ✅ (2026-06-23)
+
+- Boundaries `not-found` / `error` / `loading` (globales + dashboard + embed).
+- A11y : RatingInput clavier, `aria-pressed` sur les toggles, contraste couleur de marque (`readableTextColor`), validation native réactivée.
+- UX : sync du plan après Checkout Stripe, menu mobile marketing, messages d'erreur de connexion.
+- SEO : métadonnées + Open Graph (root layout), `robots.ts`, `sitemap.ts`, favicon. Landing soignée (preuve sociale clairement marquée « exemple »).
+
+## Phase 6 — Déploiement ✅ (2026-06-23)
+
+- `DEPLOY.md` : procédure complète Vercel + Supabase (migration) + Stripe (webhook prod), variables d'env, checklist post-déploiement, commandes exactes, recommandations prod (rate-limit durable, leaked-password, etc.).
+- `README.md`, `.env.example`, script `db:seed` : projet **directement déployable**, build vert.
+- Branche poussée + **PR draft #1** ouverte (base `baseline`).
+
+## Décisions notables consignées
+
+- Stack : Next 16 (au lieu de 15) — dernière majeure stable, justifié dans `STATE.md`.
+- shadcn écrit à la main (registre `ui.shadcn.com` renvoie 401 dans l'environnement).
+- Lectures publiques via client service-role server-side (et non RLS anon) pour éliminer toute fuite cross-tenant.
+- `force-dynamic` sur `/embed` et `/mur` : fraîcheur > cache (optimisation ISR documentée comme amélioration future).
+- Rate-limiter en mémoire pour le MVP ; recommandation prod (KV durable) documentée.

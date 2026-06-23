@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Preuvio — La preuve sociale, en français
 
-## Getting Started
+Plateforme **FR-native** de collecte et d'affichage de témoignages clients (texte & vidéo) pour créateurs, freelances, coachs et fondateurs de SaaS francophones. Collectez via une page partageable, modérez, puis affichez un **« Mur de témoignages »** embeddable sur n'importe quel site. Conforme RGPD.
 
-First, run the development server:
+> MVP construit de bout en bout — voir `RESEARCH.md` (opportunité & décision), `PLAN.md` (spécification), `TEST_REPORT.md` (QA) et `DEPLOY.md` (déploiement).
+
+## ✨ Fonctionnalités
+
+- **Espaces de collecte** : page publique brandée (lien + QR), sans compte requis côté client.
+- **Boîte de réception** : modération (approuver / archiver / mettre en avant), recherche, filtres.
+- **Widget embeddable** : « Mur de témoignages » (mosaïque / grille / carrousel, thème, colonnes) + page publique hébergée + script auto-resize.
+- **Facturation Stripe** : Free / Pro avec gating serveur, Checkout, Customer Portal, webhooks idempotents.
+- Témoignages **vidéo** (Pro), notifications email (Resend), conformité **RGPD** (consentement explicite, hébergement UE).
+
+## 🧱 Stack
+
+Next.js 16 (App Router) · TypeScript strict · Tailwind CSS v4 + shadcn/ui · Supabase (PostgreSQL + Auth + Storage + RLS) · Stripe (mode test) · Resend · Vitest · déploiement Vercel.
+
+## 🚀 Démarrage local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Dépendances
+pnpm install
+
+# 2. Variables d'environnement
+cp .env.example .env.local      # puis renseignez les valeurs (voir DEPLOY.md §1-2)
+
+# 3. Base de données : collez supabase/migrations/0001_init.sql dans le SQL Editor Supabase
+
+# 4. (Optionnel) données de démo
+pnpm db:seed                    # → demo@preuvio.app / DemoPreuvio2026!
+
+# 5. Lancer
+pnpm dev                        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔑 Variables d'environnement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Toutes documentées dans [`.env.example`](./.env.example) :
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Rôle |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | URL publique (sans slash final) |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Connexion Supabase (client) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opérations serveur (RLS bypass) — **secret** |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Stripe — **secrets** |
+| `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` | IDs de prix Pro |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Emails (optionnel, dégradation gracieuse) |
 
-## Learn More
+## 📂 Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── (marketing)/        # landing, tarifs, mentions légales, confidentialité
+│   ├── (auth)/             # login, signup + server actions
+│   ├── auth/callback/      # échange du code OAuth/magic-link
+│   ├── dashboard/          # espace authentifié (espaces, inbox, widget, partage, facturation)
+│   ├── c/[slug]/           # page de collecte publique
+│   ├── mur/[slug]/         # mur public hébergé
+│   ├── embed/[widgetId]/   # vue embeddable (framable)
+│   └── api/stripe/webhook/ # webhook Stripe (signature + idempotence)
+├── components/             # ui (shadcn), dashboard, collection, wall, marketing, billing
+├── lib/
+│   ├── actions/            # server actions (Zod + gating de plan)
+│   ├── supabase/           # clients browser/server/admin + types
+│   ├── stripe/             # client Stripe
+│   ├── validations/        # schémas Zod
+│   ├── queries.ts          # lectures owner (RLS) vs publiques (service-role)
+│   ├── plans.ts · env.ts · rate-limit.ts · auth.ts · slug.ts
+├── proxy.ts                # refresh session Supabase + headers de sécurité
+supabase/migrations/        # schéma + RLS + trigger + storage
+scripts/seed.ts             # données de démo
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔒 Sécurité
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **RLS** : aucune table n'est lisible directement par le rôle anon ; les pages publiques lisent server-side via le client service-role (jamais exposé au navigateur).
+- Validation **Zod** côté serveur sur chaque entrée ; uploads validés par **magic-bytes** ; rate-limiting sur les endpoints publics.
+- Webhook Stripe à signature vérifiée + idempotent ; en-têtes de sécurité (X-Frame-Options, CSP, nosniff, HSTS) via le proxy.
+- Aucun secret en dur ; secrets `server-only`.
 
-## Deploy on Vercel
+## 🧪 Qualité
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm typecheck   # TypeScript strict
+pnpm lint        # ESLint
+pnpm test        # 38 tests Vitest (logique métier)
+pnpm build       # build de production
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📦 Déploiement
+
+Voir [`DEPLOY.md`](./DEPLOY.md) pour la procédure Vercel + Supabase + Stripe complète et la checklist post-déploiement.
+
+---
+
+_Projet de démonstration. La preuve sociale affichée sur la landing est illustrative (exemples)._

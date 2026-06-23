@@ -33,8 +33,14 @@ export async function updateSession(request: NextRequest) {
   );
 
   // IMPORTANT: do not run code between createServerClient and getUser().
-  // getUser() revalidates the token and refreshes it if needed.
-  await supabase.auth.getUser();
+  // getUser() revalidates the token and refreshes it if needed. Wrapped so a
+  // transient auth-backend/network failure degrades gracefully instead of
+  // 500-ing every request (route-level guards still enforce auth).
+  try {
+    await supabase.auth.getUser();
+  } catch (error) {
+    console.error("[middleware] session refresh failed:", error);
+  }
 
   return supabaseResponse;
 }
