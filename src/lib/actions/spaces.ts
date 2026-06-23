@@ -55,6 +55,9 @@ export async function createSpace(input: {
       .single();
 
     if (!error && data) {
+      // Every space ships with a default widget so the embed code is
+      // immediately available.
+      await supabase.from("widgets").insert({ space_id: data.id });
       revalidatePath("/dashboard");
       return ok({ id: data.id });
     }
