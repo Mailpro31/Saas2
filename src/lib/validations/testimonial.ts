@@ -36,7 +36,7 @@ export const submitTestimonialSchema = z.object({
   consent: z
     .boolean()
     .refine((v) => v === true, "Vous devez autoriser la publication."),
-  website: z.string().max(0).optional(), // honeypot
+  website: z.string().optional(), // honeypot — checked manually in the action
 });
 
 /** Owner manually adds a testimonial they received elsewhere. */
