@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { cn, readableTextColor } from "@/lib/utils";
 
 export function CollectionForm({ space }: { space: Space }) {
   const [submitted, setSubmitted] = useState(false);
@@ -98,13 +98,14 @@ export function CollectionForm({ space }: { space: Space }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-5">
       {space.collect_video ? (
         <div className="flex gap-2">
           {(["text", "video"] as const).map((m) => (
             <button
               key={m}
               type="button"
+              aria-pressed={mode === m}
               onClick={() => {
                 setMode(m);
                 if (m === "text") setVideoFile(null);
@@ -231,7 +232,10 @@ export function CollectionForm({ space }: { space: Space }) {
         type="submit"
         disabled={submitting}
         className="w-full"
-        style={{ backgroundColor: space.brand_color }}
+        style={{
+          backgroundColor: space.brand_color,
+          color: readableTextColor(space.brand_color),
+        }}
       >
         {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
         Envoyer mon témoignage

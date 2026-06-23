@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { MobileNav } from "@/components/marketing/mobile-nav";
 
 export default function MarketingLayout({
   children,
@@ -30,6 +31,7 @@ export default function MarketingLayout({
             <Button asChild size="sm">
               <Link href="/signup">Commencer</Link>
             </Button>
+            <MobileNav />
           </div>
         </div>
       </header>

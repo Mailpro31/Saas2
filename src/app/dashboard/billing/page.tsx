@@ -5,6 +5,7 @@ import {
   UpgradeButtons,
   ManageSubscriptionButton,
 } from "@/components/billing/billing-actions";
+import { BillingSuccessSync } from "@/components/billing/billing-success-sync";
 import {
   Card,
   CardContent,
@@ -54,13 +55,17 @@ export default async function BillingPage({
       </div>
 
       {sp.success ? (
-        <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900">
-          <Sparkles className="size-4" />
-          <AlertDescription className="text-emerald-900">
-            Bienvenue dans Preuvio Pro ! Toutes les fonctionnalités sont
-            débloquées.
-          </AlertDescription>
-        </Alert>
+        <>
+          <BillingSuccessSync isPro={isPro} />
+          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900">
+            <Sparkles className="size-4" />
+            <AlertDescription className="text-emerald-900">
+              {isPro
+                ? "Bienvenue dans Preuvio Pro ! Toutes les fonctionnalités sont débloquées."
+                : "Paiement reçu — activation de votre abonnement en cours…"}
+            </AlertDescription>
+          </Alert>
+        </>
       ) : null}
       {sp.canceled ? (
         <Alert>

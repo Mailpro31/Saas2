@@ -32,7 +32,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form action={formAction} className="space-y-4">
       {mode === "signup" ? (
         <div className="space-y-2">
           <Label htmlFor="full_name">Nom (facultatif)</Label>

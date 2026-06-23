@@ -100,6 +100,7 @@ export function WidgetEditor({
                   <button
                     key={l.value}
                     type="button"
+                    aria-pressed={config.layout === l.value}
                     onClick={() => set("layout", l.value)}
                     className={cn(
                       "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
@@ -122,6 +123,7 @@ export function WidgetEditor({
                     <button
                       key={n}
                       type="button"
+                      aria-pressed={config.columns === n}
                       onClick={() => set("columns", n)}
                       className={cn(
                         "flex-1 rounded-lg border py-2 text-sm transition-colors",
@@ -144,6 +146,7 @@ export function WidgetEditor({
                   <button
                     key={th}
                     type="button"
+                    aria-pressed={config.theme === th}
                     disabled={!customThemeAllowed && th === "dark"}
                     onClick={() => set("theme", th)}
                     className={cn(

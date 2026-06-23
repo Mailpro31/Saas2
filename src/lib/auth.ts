@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/supabase/types";
 import type { User } from "@supabase/supabase-js";
 
@@ -28,10 +29,26 @@ export async function getSession(): Promise<{
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (!profile) return null;
-  return { user, profile };
+  if (profile) return { user, profile };
+
+  // Self-heal: if the signup trigger didn't create the profile, create it now.
+  const fullName =
+    typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : "";
+  const admin = createAdminClient();
+  const { data: created } = await admin
+    .from("profiles")
+    .upsert(
+      { id: user.id, email: user.email ?? "", full_name: fullName },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .maybeSingle();
+
+  return created ? { user, profile: created } : null;
 }
 
 /** Like getSession but redirects to /login when unauthenticated. */

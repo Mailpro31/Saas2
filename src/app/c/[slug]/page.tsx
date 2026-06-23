@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { publicGetSpaceBySlug } from "@/lib/queries";
 import { CollectionForm } from "@/components/collection/collection-form";
+import { readableTextColor } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -51,8 +52,11 @@ export default async function CollectionPage({
             />
           ) : (
             <span
-              className="mx-auto mb-3 flex size-14 items-center justify-center rounded-xl text-xl font-bold text-white"
-              style={{ backgroundColor: space.brand_color }}
+              className="mx-auto mb-3 flex size-14 items-center justify-center rounded-xl text-xl font-bold"
+              style={{
+                backgroundColor: space.brand_color,
+                color: readableTextColor(space.brand_color),
+              }}
             >
               {space.name.slice(0, 1).toUpperCase()}
             </span>

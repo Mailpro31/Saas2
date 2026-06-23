@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 import { WallOfLove } from "@/components/wall-of-love";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { readableTextColor } from "@/lib/utils";
 import type { TestimonialDisplay } from "@/components/testimonial-card";
 
 export async function generateMetadata({
@@ -57,8 +58,11 @@ export default async function WallPage({
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
         <header className="mb-10 text-center">
           <span
-            className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl text-xl font-bold text-white"
-            style={{ backgroundColor: space.brand_color }}
+            className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl text-xl font-bold"
+            style={{
+              backgroundColor: space.brand_color,
+              color: readableTextColor(space.brand_color),
+            }}
           >
             {space.name.slice(0, 1).toUpperCase()}
           </span>
