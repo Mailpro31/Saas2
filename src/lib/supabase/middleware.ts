@@ -1,0 +1,46 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "./types";
+
+/**
+ * Refreshes the Supabase auth session on every request and keeps the
+ * auth cookies in sync between the browser and server. Returns the
+ * (possibly mutated) response. Route-level access control is enforced
+ * in protected layouts via `getUser()`, not here.
+ */
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  // IMPORTANT: do not run code between createServerClient and getUser().
+  // getUser() revalidates the token and refreshes it if needed. Wrapped so a
+  // transient auth-backend/network failure degrades gracefully instead of
+  // 500-ing every request (route-level guards still enforce auth).
+  try {
+    await supabase.auth.getUser();
+  } catch (error) {
+    console.error("[middleware] session refresh failed:", error);
+  }
+
+  return supabaseResponse;
+}
