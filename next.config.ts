@@ -1,20 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  async headers() {
-    return [
-      {
-        // Allow the embed route to be framed on any external site.
-        source: "/embed/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: "frame-ancestors *",
-          },
-        ],
-      },
-    ];
-  },
-};
+// Security headers (incl. framing rules for /embed) are set in src/proxy.ts so
+// they can be applied conditionally per request path.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

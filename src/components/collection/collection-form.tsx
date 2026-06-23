@@ -25,6 +25,7 @@ export function CollectionForm({ space }: { space: Space }) {
     const fd = new FormData();
     fd.set("file", file);
     fd.set("kind", kind);
+    fd.set("spaceId", space.id);
     const res = await uploadMedia(fd);
     if (!res.ok) {
       setError(res.error);

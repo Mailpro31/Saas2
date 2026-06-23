@@ -141,6 +141,12 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["widgets"]["Insert"]>;
         Relationships: [];
       };
+      stripe_events: {
+        Row: { id: string; type: string | null; received_at: string };
+        Insert: { id: string; type?: string | null; received_at?: string };
+        Update: Partial<{ id: string; type: string | null; received_at: string }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

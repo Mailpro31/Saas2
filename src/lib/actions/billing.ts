@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe/server";
 import { serverEnv } from "@/lib/env";
@@ -32,8 +32,8 @@ export async function createCheckoutSession(
         metadata: { supabase_user_id: session.user.id },
       });
       customerId = customer.id;
-      const supabase = await createClient();
-      const { error: updateError } = await supabase
+      const admin = createAdminClient();
+      const { error: updateError } = await admin
         .from("profiles")
         .update({ stripe_customer_id: customerId })
         .eq("id", session.user.id);

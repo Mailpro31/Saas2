@@ -70,6 +70,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Signature invalide" }, { status: 400 });
   }
 
+  // Idempotency: record the event id; a unique violation means we already
+  // processed this delivery (Stripe retries / replays) → ack and skip.
+  const dedup = createAdminClient();
+  const { error: dedupError } = await dedup
+    .from("stripe_events")
+    .insert({ id: event.id, type: event.type });
+  if (dedupError) {
+    if (dedupError.code === "23505") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    console.error("[stripe] dedup insert error:", dedupError);
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {

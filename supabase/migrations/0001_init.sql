@@ -118,14 +118,18 @@ alter table public.spaces       enable row level security;
 alter table public.testimonials enable row level security;
 alter table public.widgets      enable row level security;
 
--- profiles : owner can read/update own row (insert handled by trigger / service role)
+-- profiles : owner can READ own row. Writes are NEVER allowed from the user
+-- (anon/authenticated) context — a self-UPDATE policy would let a user PATCH
+-- their own `plan` column via PostgREST and self-grant Pro. All profile writes
+-- go through the service-role client (signup trigger, Stripe webhook, billing).
 drop policy if exists profiles_select_own on public.profiles;
 create policy profiles_select_own on public.profiles
   for select using (id = (select auth.uid()));
 
+-- Defense in depth: remove the default table write grants for client roles so
+-- that, even absent a policy, no column of profiles is user-writable.
 drop policy if exists profiles_update_own on public.profiles;
-create policy profiles_update_own on public.profiles
-  for update using (id = (select auth.uid())) with check (id = (select auth.uid()));
+revoke insert, update, delete on public.profiles from anon, authenticated;
 
 -- spaces : owner-only read (public pages read via the service-role client
 -- server-side, so anon never has direct table access). Owner writes.
@@ -236,6 +240,18 @@ create policy widgets_delete_owner on public.widgets
   );
 
 -- ============================================================================
+-- stripe_events : webhook idempotency. Written by the service-role webhook only.
+-- RLS enabled with NO policies → no anon/authenticated access whatsoever.
+-- ============================================================================
+create table if not exists public.stripe_events (
+  id          text primary key,
+  type        text,
+  received_at timestamptz not null default now()
+);
+alter table public.stripe_events enable row level security;
+revoke all on public.stripe_events from anon, authenticated;
+
+-- ============================================================================
 -- Storage : public 'media' bucket for avatars / logos / videos
 -- Public-form uploads happen via the service-role admin client (server side),
 -- so no anon insert policy is required. Authenticated users may upload too.
@@ -247,18 +263,14 @@ values (
 )
 on conflict (id) do nothing;
 
+-- Public read so embedded avatars/videos display. ALL writes go through the
+-- service-role admin client (server-side, validated), so no anon/authenticated
+-- insert/update/delete policy is granted — removes the storage-abuse surface.
 drop policy if exists media_public_read on storage.objects;
 create policy media_public_read on storage.objects
   for select using (bucket_id = 'media');
 
+-- Remove any previously-created authenticated write policies.
 drop policy if exists media_auth_insert on storage.objects;
-create policy media_auth_insert on storage.objects
-  for insert to authenticated with check (bucket_id = 'media');
-
 drop policy if exists media_auth_update on storage.objects;
-create policy media_auth_update on storage.objects
-  for update to authenticated using (bucket_id = 'media' and owner = (select auth.uid()));
-
 drop policy if exists media_auth_delete on storage.objects;
-create policy media_auth_delete on storage.objects
-  for delete to authenticated using (bucket_id = 'media' and owner = (select auth.uid()));

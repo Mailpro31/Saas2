@@ -61,7 +61,11 @@ export async function signupAction(
 
   if (error) {
     if (error.message.toLowerCase().includes("already")) {
-      return { error: "Un compte existe déjà avec cet email." };
+      // Avoid account enumeration: respond exactly like a fresh signup.
+      return {
+        message:
+          "Inscription réussie ! Vérifiez votre boîte mail pour confirmer votre adresse.",
+      };
     }
     return { error: "Inscription impossible. Réessayez." };
   }
