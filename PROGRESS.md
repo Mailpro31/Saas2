@@ -42,6 +42,16 @@ _Méthode_ : fan-out de **4 agents de recherche en parallèle** (clusters : preu
 
 ---
 
-## Phase 2 — Spécification & Plan ⏳ (en cours)
+## Phase 2 — Spécification & Plan ✅ (2026-06-23)
 
-_(Section mise à jour à la fin de la Phase 2.)_
+`PLAN.md` rédigé : proposition de valeur, **user stories MoSCoW** (7 Must, 7 Should, 4 Could, 7 Won't), périmètre explicite anti-scope-creep, **schéma de données** (profiles/spaces/testimonials/widgets + RLS + index), architecture des routes & composants, parcours utilisateur complet, flux auth + paiement, wireframes ASCII des 5 écrans clés, ordre de construction.
+
+**4 fonctionnalités cœur abouties** : (1) espaces de collecte + page publique, (2) boîte de réception / modération, (3) widget « Mur de témoignages » embeddable + page hébergée, (4) facturation Stripe Free/Pro avec gating serveur.
+
+**Prochaine étape** : Phase 3 — développement (parcours critique d'abord : socle → auth → espaces → collecte → modération → widget → Stripe).
+
+---
+
+## Phase 3 — Développement ⏳ (en cours)
+
+_(Section mise à jour au fil de l'eau.)_
