@@ -1,0 +1,21 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 90, reused 19, downloaded 64, added 0
+Progress: resolved 212, reused 67, downloaded 132, added 0
+ WARN  1 deprecated subdependencies found: node-domexception@1.0.0
+Packages: +315
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 315, reused 102, downloaded 213, added 315, done
+
+
+Something went wrong. Please check the error below for more details.
+If the problem persists, please open an issue on GitHub.
+
+Message:
+You are not authorized to access the item at https://ui.shadcn.com/init?base=base&style=nova&baseColor=neutral&theme=neutral&iconLibrary=lucide&font=geist&rtl=false&menuAccent=subtle&menuColor=default&radius=default&template=next&track=1. If this is a remote registry, you may need to authenticate.
+
+Suggestion:
+Check your authentication credentials and environment variables.
+
+You can also try a previous version to see if that works:
+pnpm dlx shadcn@4.10.0 init -d -y
+
