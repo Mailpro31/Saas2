@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, clientIpFrom } from "@/lib/rate-limit";
+import { planLimits, type Plan } from "@/lib/plans";
 import { ok, fail, type ActionResult } from "./result";
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -52,9 +53,9 @@ async function sniffMatches(file: File, declared: string): Promise<boolean> {
     case "video/mp4":
       return asciiAt(head, 4, 4) === "ftyp";
     case "video/quicktime":
-      return ["ftyp", "moov", "mdat", "wide", "free", "skip"].includes(
-        asciiAt(head, 4, 4),
-      );
+      // Only genuine leading atoms. The filler atoms (wide/free/skip) are
+      // trivially prependable to arbitrary content, so we don't accept them.
+      return ["ftyp", "moov", "mdat"].includes(asciiAt(head, 4, 4));
     default:
       return false;
   }
@@ -105,15 +106,40 @@ export async function uploadMedia(
     return fail("Le contenu du fichier ne correspond pas à son type déclaré.");
   }
 
+  // Per-space cap so one space can't be flooded even from rotating IPs.
+  if (!rateLimit(`upload:space:${spaceId}`, 30, 60_000).ok) {
+    return fail("Trop d'envois de fichiers. Réessayez dans un instant.");
+  }
+
   const admin = createAdminClient();
 
-  // Bind the upload to a real space (prevents anonymous "free CDN" abuse).
+  // Bind the upload to the space AND to what that space is actually allowed to
+  // collect. Without this, anyone who knows a space id (it's in public page
+  // source) could push media — including Pro-only video — into any tenant's
+  // bucket, bypassing the plan gate and abusing storage as a free CDN.
   const { data: space } = await admin
     .from("spaces")
-    .select("id")
+    .select("id, owner_id, collect_avatar, collect_video")
     .eq("id", spaceId)
     .maybeSingle();
   if (!space) return fail("Espace introuvable.");
+
+  if (kind === "image" && !space.collect_avatar) {
+    return fail("Les photos ne sont pas activées pour cet espace.");
+  }
+  if (kind === "video") {
+    if (!space.collect_video) {
+      return fail("Les témoignages vidéo ne sont pas activés pour cet espace.");
+    }
+    const { data: owner } = await admin
+      .from("profiles")
+      .select("plan")
+      .eq("id", space.owner_id)
+      .maybeSingle();
+    if (!planLimits(owner?.plan as Plan | undefined).video) {
+      return fail("Les témoignages vidéo ne sont pas activés pour cet espace.");
+    }
+  }
 
   const ext = EXT[file.type] ?? "bin";
   const path = `space/${spaceId}/${kind}/${crypto.randomUUID()}.${ext}`;

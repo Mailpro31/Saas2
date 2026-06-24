@@ -25,7 +25,8 @@ pnpm install
 # 2. Variables d'environnement
 cp .env.example .env.local      # puis renseignez les valeurs (voir DEPLOY.md §1-2)
 
-# 3. Base de données : collez supabase/migrations/0001_init.sql dans le SQL Editor Supabase
+# 3. Base de données : dans le SQL Editor Supabase, exécutez DANS L'ORDRE
+#    supabase/migrations/0001_init.sql puis supabase/migrations/0002_hardening.sql
 
 # 4. (Optionnel) données de démo
 pnpm db:seed                    # → demo@preuvio.app / DemoPreuvio2026!

@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
 import { rateLimit, clientIpFrom } from "@/lib/rate-limit";
 import { planLimits, type Plan } from "@/lib/plans";
+import { removeMediaByPublicUrls } from "@/lib/storage";
 import { sendNewTestimonialEmail } from "@/lib/email/resend";
 import {
   submitTestimonialSchema,
@@ -166,6 +167,7 @@ export async function addManualTestimonial(
   if (error) return fail("Ajout impossible (vérifiez vos droits).");
 
   revalidatePath(`/dashboard/${data.spaceId}`);
+  revalidatePath(`/dashboard/${data.spaceId}/widgets`);
   return ok(undefined);
 }
 
@@ -193,6 +195,9 @@ export async function updateTestimonialStatus(
   if (error || !row) return fail("Action impossible.");
 
   revalidatePath(`/dashboard/${row.space_id}`);
+  // The widget editor's live preview reads approved testimonials and isn't
+  // force-dynamic, so it must be revalidated when approval state changes.
+  revalidatePath(`/dashboard/${row.space_id}/widgets`);
   return ok(undefined);
 }
 
@@ -217,6 +222,7 @@ export async function toggleFeatured(
   if (error || !row) return fail("Action impossible.");
 
   revalidatePath(`/dashboard/${row.space_id}`);
+  revalidatePath(`/dashboard/${row.space_id}/widgets`);
   return ok(undefined);
 }
 
@@ -230,11 +236,13 @@ export async function deleteTestimonial(
   if (!parsed.success) return fail("Identifiant invalide.");
 
   const supabase = await createClient();
+  // RLS scopes this read to the owner, so a missing row means "not yours".
   const { data: row } = await supabase
     .from("testimonials")
-    .select("space_id")
+    .select("space_id, author_avatar_url, video_url")
     .eq("id", parsed.data.id)
-    .single();
+    .maybeSingle();
+  if (!row) return fail("Témoignage introuvable.");
 
   const { error } = await supabase
     .from("testimonials")
@@ -243,6 +251,11 @@ export async function deleteTestimonial(
 
   if (error) return fail("Suppression impossible.");
 
-  if (row) revalidatePath(`/dashboard/${row.space_id}`);
+  // Remove the stored avatar/video so deleted content is no longer served from
+  // the public bucket (privacy / RGPD) and storage isn't leaked.
+  await removeMediaByPublicUrls([row.author_avatar_url, row.video_url]);
+
+  revalidatePath(`/dashboard/${row.space_id}`);
+  revalidatePath(`/dashboard/${row.space_id}/widgets`);
   return ok(undefined);
 }

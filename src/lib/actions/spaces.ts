@@ -5,12 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
 import { planLimits } from "@/lib/plans";
 import { slugify, withRandomSuffix } from "@/lib/slug";
+import { removeSpaceMedia } from "@/lib/storage";
 import {
   createSpaceSchema,
   updateSpaceSchema,
 } from "@/lib/validations/space";
 import { ok, fail, type ActionResult } from "./result";
-import type { Space } from "@/lib/supabase/types";
+import type { Database, Space } from "@/lib/supabase/types";
 
 export async function createSpace(input: {
   name: string;
@@ -56,8 +57,14 @@ export async function createSpace(input: {
 
     if (!error && data) {
       // Every space ships with a default widget so the embed code is
-      // immediately available.
-      await supabase.from("widgets").insert({ space_id: data.id });
+      // immediately available. Don't fail space creation on a hiccup, but log
+      // it instead of dropping the error silently.
+      const { error: widgetError } = await supabase
+        .from("widgets")
+        .insert({ space_id: data.id });
+      if (widgetError) {
+        console.error("[spaces] default widget insert failed:", widgetError);
+      }
       revalidatePath("/dashboard");
       return ok({ id: data.id });
     }
@@ -85,13 +92,20 @@ export async function updateSpace(
   }
 
   const limits = planLimits(session.profile.plan);
-  // Video collection is a Pro feature.
-  const collect_video = limits.video ? parsed.data.collect_video : false;
+
+  // Video collection is a Pro feature. For non-Pro plans we simply never write
+  // this field, so an unrelated settings save can't silently flip a previously
+  // enabled value off (nor turn it on — submitTestimonial enforces the gate
+  // independently).
+  const updates: Database["public"]["Tables"]["spaces"]["Update"] = {
+    ...parsed.data,
+  };
+  if (!limits.video) delete updates.collect_video;
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("spaces")
-    .update({ ...parsed.data, collect_video })
+    .update(updates)
     .eq("id", spaceId)
     .eq("owner_id", session.user.id) // defense in depth on top of RLS
     .select("*")
@@ -101,6 +115,7 @@ export async function updateSpace(
 
   revalidatePath(`/dashboard/${spaceId}/settings`);
   revalidatePath(`/c/${data.slug}`);
+  revalidatePath(`/mur/${data.slug}`);
   return ok(data);
 }
 
@@ -111,13 +126,21 @@ export async function deleteSpace(
   if (!session) return fail("Vous devez être connecté.");
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: deleted, error } = await supabase
     .from("spaces")
     .delete()
     .eq("id", spaceId)
-    .eq("owner_id", session.user.id);
+    .eq("owner_id", session.user.id)
+    .select("id")
+    .maybeSingle();
 
   if (error) return fail("Suppression impossible.");
+  if (!deleted) return fail("Espace introuvable.");
+
+  // DB rows cascade, but storage objects don't — remove all of this space's
+  // media so nothing is left publicly served after deletion.
+  await removeSpaceMedia(spaceId);
+
   revalidatePath("/dashboard");
   return ok(undefined);
 }

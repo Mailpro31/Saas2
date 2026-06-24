@@ -4,6 +4,7 @@ import type { Space } from "@/lib/supabase/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { readableTextColor } from "@/lib/utils";
 
 export function SpaceCard({
   space,
@@ -20,8 +21,11 @@ export function SpaceCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <span
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-white"
-              style={{ backgroundColor: space.brand_color }}
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
+              style={{
+                backgroundColor: space.brand_color,
+                color: readableTextColor(space.brand_color),
+              }}
               aria-hidden
             >
               {space.name.slice(0, 1).toUpperCase()}
