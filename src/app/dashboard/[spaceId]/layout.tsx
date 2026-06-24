@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth";
 import { getOwnedSpace } from "@/lib/queries";
 import { SpaceTabs } from "@/components/dashboard/space-tabs";
 import { Button } from "@/components/ui/button";
+import { readableTextColor } from "@/lib/utils";
 
 export default async function SpaceLayout({
   children,
@@ -23,8 +24,11 @@ export default async function SpaceLayout({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <span
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-semibold text-white"
-            style={{ backgroundColor: space.brand_color }}
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-semibold"
+            style={{
+              backgroundColor: space.brand_color,
+              color: readableTextColor(space.brand_color),
+            }}
             aria-hidden
           >
             {space.name.slice(0, 1).toUpperCase()}

@@ -123,6 +123,11 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error("[stripe] webhook handler error:", error);
+    // Roll back the idempotency marker so Stripe's retry re-processes this
+    // event, instead of the retry hitting the unique violation above and being
+    // acked as an already-seen duplicate (which would strand the work forever —
+    // e.g. a paid customer left on the free plan).
+    await dedup.from("stripe_events").delete().eq("id", event.id);
     return NextResponse.json({ error: "Erreur de traitement" }, { status: 500 });
   }
 

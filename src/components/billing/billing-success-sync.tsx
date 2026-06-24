@@ -12,7 +12,10 @@ export function BillingSuccessSync({ isPro }: { isPro: boolean }) {
   const router = useRouter();
   useEffect(() => {
     if (isPro) return;
-    const timers = [2500, 6000].map((ms) =>
+    // Webhook delivery can lag (cold start, retry). Re-check on a backoff up to
+    // ~30s so the upgrade reflects without a manual reload; the page shows an
+    // "activation in progress" hint until then.
+    const timers = [2000, 4000, 7000, 11000, 16000, 23000, 30000].map((ms) =>
       setTimeout(() => router.refresh(), ms),
     );
     return () => timers.forEach(clearTimeout);

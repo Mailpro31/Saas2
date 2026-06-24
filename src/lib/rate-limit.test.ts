@@ -34,12 +34,20 @@ describe("rateLimit", () => {
 });
 
 describe("clientIpFrom", () => {
-  it("takes the first x-forwarded-for entry", () => {
-    const h = new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" });
-    expect(clientIpFrom(h)).toBe("203.0.113.7");
+  it("prefers x-real-ip (proxy-set, non-forgeable) over x-forwarded-for", () => {
+    const h = new Headers({
+      "x-real-ip": "198.51.100.9",
+      "x-forwarded-for": "203.0.113.7, 10.0.0.1",
+    });
+    expect(clientIpFrom(h)).toBe("198.51.100.9");
   });
 
-  it("falls back to x-real-ip", () => {
+  it("uses the right-most x-forwarded-for entry (closest trusted proxy), not the spoofable left-most", () => {
+    const h = new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" });
+    expect(clientIpFrom(h)).toBe("10.0.0.1");
+  });
+
+  it("falls back to x-real-ip when it is the only header", () => {
     const h = new Headers({ "x-real-ip": "198.51.100.9" });
     expect(clientIpFrom(h)).toBe("198.51.100.9");
   });

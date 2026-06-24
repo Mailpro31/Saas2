@@ -70,7 +70,18 @@ export default async function CollectionPage({
         </div>
 
         <div className="rounded-b-2xl border bg-card p-6 shadow-sm">
-          <CollectionForm space={space} />
+          {/* Pass only public-safe fields — never the full row (owner_id, …). */}
+          <CollectionForm
+            space={{
+              id: space.id,
+              name: space.name,
+              brand_color: space.brand_color,
+              thank_you_message: space.thank_you_message,
+              collect_rating: space.collect_rating,
+              collect_avatar: space.collect_avatar,
+              collect_video: space.collect_video,
+            }}
+          />
         </div>
 
         <p className="mt-5 text-center text-xs text-muted-foreground">

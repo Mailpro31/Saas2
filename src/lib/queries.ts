@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Space, Testimonial, Widget } from "@/lib/supabase/types";
 
+/**
+ * Hard cap on testimonials rendered on a public wall/embed. Prevents an
+ * unbounded SELECT + server render on the highest-traffic, uncached surfaces
+ * (Pro spaces have no testimonial limit). Pagination is a future enhancement.
+ */
+const MAX_PUBLIC_TESTIMONIALS = 200;
+
 // ---------------------------------------------------------------------------
 // Owner-scoped reads (user client + RLS). Used by the authenticated dashboard.
 // ---------------------------------------------------------------------------
@@ -118,7 +125,8 @@ export const publicGetApprovedTestimonials = cache(
       .eq("space_id", spaceId)
       .eq("status", "approved")
       .order("featured", { ascending: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(MAX_PUBLIC_TESTIMONIALS);
     return data ?? [];
   },
 );

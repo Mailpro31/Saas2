@@ -15,8 +15,9 @@ Procédure complète pour déployer **Preuvio** en production. Temps estimé : ~
 ## 1. Base de données — Supabase
 
 1. Créez un projet sur [supabase.com](https://supabase.com) (région **EU** — Francfort/Paris — pour le RGPD).
-2. **SQL Editor** → collez l'intégralité de `supabase/migrations/0001_init.sql` → **Run**.
-   Cela crée les tables, la RLS, le trigger d'inscription, la table `stripe_events` et le bucket Storage `media`.
+2. **SQL Editor** → exécutez les migrations **dans l'ordre** :
+   - `supabase/migrations/0001_init.sql` → **Run** (tables, RLS, trigger d'inscription, table `stripe_events`, bucket Storage `media`).
+   - `supabase/migrations/0002_hardening.sql` → **Run** (plafond de témoignages anti-race au niveau base).
 3. **Project Settings → API** → notez :
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

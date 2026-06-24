@@ -39,13 +39,20 @@ export async function getSession(): Promise<{
       ? user.user_metadata.full_name
       : "";
   const admin = createAdminClient();
-  const { data: created } = await admin
+  // Insert the missing row only. `ignoreDuplicates` leaves an already-existing
+  // profile untouched (e.g. when the first SELECT missed it due to replica lag)
+  // instead of overwriting its email / full_name with possibly-stale auth values
+  // on this read path.
+  await admin
     .from("profiles")
     .upsert(
       { id: user.id, email: user.email ?? "", full_name: fullName },
-      { onConflict: "id" },
-    )
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+  const { data: created } = await admin
+    .from("profiles")
     .select("*")
+    .eq("id", user.id)
     .maybeSingle();
 
   return created ? { user, profile: created } : null;

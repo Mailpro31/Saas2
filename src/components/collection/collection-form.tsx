@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CheckCircle2, Loader2, Upload, Video, Type } from "lucide-react";
 import type { Space } from "@/lib/supabase/types";
 import { submitTestimonial } from "@/lib/actions/testimonials";
@@ -12,7 +12,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, readableTextColor } from "@/lib/utils";
 
-export function CollectionForm({ space }: { space: Space }) {
+/**
+ * Only the public-safe space fields this form needs — deliberately NOT the full
+ * Space row, whose internal columns (owner_id, …) must not be serialized onto
+ * this anonymous public page.
+ */
+export type CollectionSpace = Pick<
+  Space,
+  | "id"
+  | "name"
+  | "brand_color"
+  | "thank_you_message"
+  | "collect_rating"
+  | "collect_avatar"
+  | "collect_video"
+>;
+
+export function CollectionForm({ space }: { space: CollectionSpace }) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +36,10 @@ export function CollectionForm({ space }: { space: Space }) {
   const [mode, setMode] = useState<"text" | "video">("text");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  // Cache successful uploads so a failed/repeat submit doesn't re-upload the
+  // same file and orphan duplicates in storage.
+  const avatarUrlRef = useRef<string | null>(null);
+  const videoUrlRef = useRef<string | null>(null);
 
   async function upload(file: File, kind: "image" | "video"): Promise<string | null> {
     const fd = new FormData();
@@ -37,27 +57,32 @@ export function CollectionForm({ space }: { space: Space }) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const form = new FormData(e.currentTarget);
+
+    const wantsVideo = space.collect_video && mode === "video";
+    // Validate everything BEFORE uploading anything, so a validation failure
+    // never leaves an orphaned upload behind.
+    if (wantsVideo && !videoFile && !videoUrlRef.current) {
+      setError("Veuillez sélectionner une vidéo, ou basculez en mode écrit.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const form = new FormData(e.currentTarget);
-
-      let avatarUrl: string | undefined;
-      if (space.collect_avatar && avatarFile) {
+      let avatarUrl = avatarUrlRef.current ?? undefined;
+      if (space.collect_avatar && avatarFile && !avatarUrlRef.current) {
         const url = await upload(avatarFile, "image");
         if (!url) return;
+        avatarUrlRef.current = url;
         avatarUrl = url;
       }
 
-      if (space.collect_video && mode === "video" && !videoFile) {
-        setError("Veuillez sélectionner une vidéo, ou basculez en mode écrit.");
-        return;
-      }
-
-      let videoUrl: string | undefined;
-      const isVideo = space.collect_video && mode === "video" && !!videoFile;
-      if (isVideo && videoFile) {
+      const isVideo = wantsVideo && (!!videoFile || !!videoUrlRef.current);
+      let videoUrl = videoUrlRef.current ?? undefined;
+      if (isVideo && videoFile && !videoUrlRef.current) {
         const url = await upload(videoFile, "video");
         if (!url) return;
+        videoUrlRef.current = url;
         videoUrl = url;
       }
 
@@ -108,7 +133,10 @@ export function CollectionForm({ space }: { space: Space }) {
               aria-pressed={mode === m}
               onClick={() => {
                 setMode(m);
-                if (m === "text") setVideoFile(null);
+                if (m === "text") {
+                  setVideoFile(null);
+                  videoUrlRef.current = null;
+                }
               }}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition-colors",
@@ -136,7 +164,10 @@ export function CollectionForm({ space }: { space: Space }) {
             id="video"
             type="file"
             accept="video/mp4,video/webm,video/quicktime"
-            onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              setVideoFile(e.target.files?.[0] ?? null);
+              videoUrlRef.current = null;
+            }}
           />
         </div>
       ) : null}
@@ -195,7 +226,10 @@ export function CollectionForm({ space }: { space: Space }) {
             id="avatar"
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              setAvatarFile(e.target.files?.[0] ?? null);
+              avatarUrlRef.current = null;
+            }}
           />
         </div>
       ) : null}

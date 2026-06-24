@@ -36,9 +36,27 @@ export function rateLimit(
   return { ok: true, retryAfterMs: 0 };
 }
 
-/** Extracts a best-effort client IP from forwarded headers. */
+/**
+ * Extracts a best-effort client IP for rate-limit keying.
+ *
+ * SECURITY: a client can send any `x-forwarded-for`, and its *left-most* entry
+ * is the client-supplied value — keying on it lets an attacker mint a fresh
+ * bucket per request and bypass the limit. We therefore prefer `x-real-ip`
+ * (set by the platform / reverse proxy to the real peer, not forgeable via the
+ * request body) and otherwise take the *right-most* forwarded entry, which is
+ * the one appended by the closest trusted proxy. For hard guarantees, front the
+ * limiter with the platform's verified IP and a durable store (see DEPLOY.md).
+ */
 export function clientIpFrom(headers: Headers): string {
+  const realIp = headers.get("x-real-ip");
+  if (realIp?.trim()) return realIp.trim();
   const fwd = headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]?.trim() || "unknown";
-  return headers.get("x-real-ip") ?? "unknown";
+  if (fwd) {
+    const parts = fwd
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    return parts[parts.length - 1] || "unknown";
+  }
+  return "unknown";
 }
